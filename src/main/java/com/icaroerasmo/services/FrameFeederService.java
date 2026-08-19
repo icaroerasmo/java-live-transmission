@@ -12,7 +12,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.LockSupport;
 
 @Log4j2
 @Service
@@ -51,13 +53,14 @@ public class FrameFeederService {
         feeders.put(camera.name(), running);
 
         double fps = Double.parseDouble(properties.output().fps());
-        long intervalMs = (long) (1000.0 / fps);
+        long intervalNanos = (long) (TimeUnit.SECONDS.toNanos(1) / fps);
 
         Thread feederThread = Thread.ofVirtual().name("frame-feeder-" + camera.name()).start(() -> {
             log.info("[FrameFeeder] Started feeder for {}", camera.name());
             Path currentFile = Path.of(camera.currentPath());
 
             try (FileOutputStream fos = new FileOutputStream(pipePath.toString())) {
+                long nextWrite = System.nanoTime();
                 while (running.get()) {
                     try {
                         byte[] bytes = Files.readAllBytes(currentFile);
@@ -70,11 +73,13 @@ public class FrameFeederService {
                             log.debug("[FrameFeeder] Read error for {}: {}", camera.name(), e.getMessage());
                         }
                     }
-                    try {
-                        Thread.sleep(intervalMs);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        break;
+
+                    nextWrite += intervalNanos;
+                    long delay = nextWrite - System.nanoTime();
+                    if (delay > 0) {
+                        LockSupport.parkNanos(delay);
+                    } else if (delay < -intervalNanos) {
+                        nextWrite = System.nanoTime();
                     }
                 }
             } catch (IOException e) {
