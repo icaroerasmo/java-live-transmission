@@ -33,16 +33,19 @@ public class CompositorCommandParser {
             cmd.add(camera.pipePath());
         }
 
-        // RTSP inputs for audio
+        // Raw PCM inputs remain live because their feeders substitute silence
+        // whenever a camera audio worker is unavailable.
         for (CameraProperties camera : cameras) {
             cmd.add("-thread_queue_size");
-            cmd.add(camera.threadQueueSize());
-            cmd.add("-rtsp_transport");
-            cmd.add("tcp");
-            cmd.add("-timeout");
-            cmd.add(camera.rtspTimeoutUs());
+            cmd.add("8");
+            cmd.add("-f");
+            cmd.add("s16le");
+            cmd.add("-ar");
+            cmd.add(properties.output().audioSampleRate());
+            cmd.add("-ac");
+            cmd.add("1");
             cmd.add("-i");
-            cmd.add(camera.rtspUrl());
+            cmd.add(camera.audioPipePath());
         }
 
         // Build filter complex
@@ -73,7 +76,8 @@ public class CompositorCommandParser {
 
         // Audio: mix all camera audio tracks
         for (int i = 0; i < n; i++) {
-            filter.append(String.format("[%d:a]aresample=44100:async=1:first_pts=0,volume=0.25[a%d];", n + i, i));
+            filter.append(String.format("[%d:a]aresample=%s:async=1:first_pts=0,volume=0.25[a%d];",
+                    n + i, properties.output().audioSampleRate(), i));
         }
         for (int i = 0; i < n; i++) {
             filter.append(String.format("[a%d]", i));
