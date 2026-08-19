@@ -1,0 +1,69 @@
+live:
+  rtmp-url: ${LIVE_RTMP_URL}
+  stream-key: ${LIVE_STREAM_KEY}
+  output:
+    video-bitrate: ${LIVE_VIDEO_BITRATE:1200k}
+    maxrate: ${LIVE_MAXRATE:1500k}
+    bufsize: ${LIVE_BUFSIZE:3000k}
+    fps: ${LIVE_FPS:30}
+    gop: ${LIVE_GOP:60}
+    width: ${LIVE_OUTPUT_WIDTH:1280}
+    height: ${LIVE_PANEL_HEIGHT:720}
+    video-codec: ${LIVE_VIDEO_CODEC:h264_nvenc}
+    video-preset: ${LIVE_VIDEO_PRESET:p4}
+    output-tune: ${LIVE_OUTPUT_TUNE:ll}
+    audio-codec: aac
+    audio-bitrate: 128k
+    audio-sample-rate: 44100
+    audio-channels: 2
+  panel:
+    width: ${LIVE_PANEL_WIDTH:640}
+    height: ${LIVE_PANEL_HEIGHT:360}
+  input:
+    thread-queue-size: ${LIVE_INPUT_THREAD_QUEUE_SIZE:256}
+    rtsp-timeout-us: ${LIVE_RTSP_TIMEOUT_US:5000000}
+    probesize: ${LIVE_INPUT_PROBESIZE:5000000}
+    analyzeduration: ${LIVE_INPUT_ANALYZEDURATION:5000000}
+  watchdog:
+    frame-timeout-seconds: ${LIVE_FRAME_TIMEOUT_SECONDS:20}
+    startup-frame-timeout-seconds: ${LIVE_STARTUP_FRAME_TIMEOUT_SECONDS:30}
+    static-frame-seconds: ${LIVE_STATIC_FRAME_SECONDS:3}
+    camera-retry-seconds: ${LIVE_CAMERA_RETRY_SECONDS:10}
+    camera-probe-timeout-seconds: ${LIVE_CAMERA_PROBE_TIMEOUT_SECONDS:8}
+    restart-delay-seconds: ${LIVE_RESTART_DELAY:5}
+  cameras:
+    - name: garagem1
+      label: "GARAGEM 1"
+      rtsp-url: ${LIVE_GARAGEM1_RTSP_URL:rtsp://go2rtc:8554/garagem1}
+      thread-queue-size: ${LIVE_GARAGEM1_INPUT_THREAD_QUEUE_SIZE:256}
+      rtsp-timeout-us: ${LIVE_GARAGEM1_RTSP_TIMEOUT_US:15000000}
+      probesize: ${LIVE_GARAGEM1_INPUT_PROBESIZE:10000000}
+      analyzeduration: ${LIVE_GARAGEM1_INPUT_ANALYZEDURATION:5000000}
+      filter-fps: ${LIVE_GARAGEM1_FILTER_FPS:10}
+    - name: garagem2
+      label: "GARAGEM 2"
+      rtsp-url: ${LIVE_GARAGEM2_RTSP_URL:rtsp://go2rtc:8554/garagem2}
+      thread-queue-size: ${LIVE_GARAGEM2_INPUT_THREAD_QUEUE_SIZE:256}
+      rtsp-timeout-us: ${LIVE_GARAGEM2_RTSP_TIMEOUT_US:15000000}
+      probesize: ${LIVE_GARAGEM2_INPUT_PROBESIZE:10000000}
+      analyzeduration: ${LIVE_GARAGEM2_INPUT_ANALYZEDURATION:5000000}
+      filter-fps: ${LIVE_GARAGEM2_FILTER_FPS:10}
+    - name: garagem3
+      label: "GARAGEM 3"
+      rtsp-url: ${LIVE_GARAGEM3_RTSP_URL:rtsp://go2rtc:8554/garagem3}
+      thread-queue-size: ${LIVE_GARAGEM3_INPUT_THREAD_QUEUE_SIZE:256}
+      rtsp-timeout-us: ${LIVE_GARAGEM3_RTSP_TIMEOUT_US:15000000}
+      probesize: ${LIVE_GARAGEM3_INPUT_PROBESIZE:10000000}
+      analyzeduration: ${LIVE_GARAGEM3_INPUT_ANALYZEDURATION:5000000}
+      filter-fps: ${LIVE_GARAGEM3_FILTER_FPS:10}
+    - name: area_de_servico
+      label: "AREA DE SERVICO"
+      rtsp-url: ${LIVE_AREA_DE_SERVICO_RTSP_URL:rtsp://go2rtc:8554/area_de_servico}
+      thread-queue-size: ${LIVE_AREA_DE_SERVICO_INPUT_THREAD_QUEUE_SIZE:256}
+      rtsp-timeout-us: ${LIVE_AREA_DE_SERVICO_RTSP_TIMEOUT_US:15000000}
+      probesize: ${LIVE_AREA_DE_SERVICO_INPUT_PROBESIZE:10000000}
+      analyzeduration: ${LIVE_AREA_DE_SERVICO_INPUT_ANALYZEDURATION:5000000}
+      filter-fps: ${LIVE_AREA_DE_SERVICO_FILTER_FPS:10}
+  telegram:
+    chat-id: ${TELEGRAM_CHAT_ID}
+    bot-token: ${TELEGRAM_BOT_TOKEN}
