@@ -35,6 +35,9 @@ public class WatchdogScheduledTask {
     private FrameFeederService frameFeederService;
 
     @Autowired
+    private AudioStreamService audioStreamService;
+
+    @Autowired
     private CameraStateStorage cameraStateStorage;
 
     @Autowired
@@ -64,6 +67,7 @@ public class WatchdogScheduledTask {
 
         for (CameraProperties camera : properties.cameras()) {
             frameFeederService.startFeeder(camera);
+            audioStreamService.start(camera);
         }
 
         compositorService.start();
@@ -113,6 +117,7 @@ public class WatchdogScheduledTask {
                     if (state.available()) {
                         state.setAvailable(false);
                         frameWorkerService.stopWorker(camera.name());
+                        audioStreamService.stopWorker(camera.name());
                         activateFallbackImage(camera);
                         state.setNextProbeAt(now + properties.watchdog().cameraRetrySeconds());
                         telegramUtil.sendMessage(MessagesEnum.CAMERA_UNAVAILABLE, camera.label(), "worker exited");
@@ -145,6 +150,7 @@ public class WatchdogScheduledTask {
                     log.warn("[Watchdog] {} unavailable: {}", camera.name(), reason);
                     state.setAvailable(false);
                     frameWorkerService.stopWorker(camera.name());
+                    audioStreamService.stopWorker(camera.name());
                     activateFallbackImage(camera);
                     state.setNextProbeAt(System.currentTimeMillis() / 1000 + properties.watchdog().cameraRetrySeconds());
                     telegramUtil.sendMessage(MessagesEnum.CAMERA_UNAVAILABLE, camera.label(), reason);
@@ -153,6 +159,9 @@ public class WatchdogScheduledTask {
                 // Frame is fresh - mark as available if it wasn't before
                 if (!state.available() && state.seenFrame()) {
                     state.setAvailable(true);
+                }
+                if (state.available() && !audioStreamService.isWorkerAlive(camera.name())) {
+                    audioStreamService.restartWorkerIfDue(camera);
                 }
             }
         }
@@ -171,6 +180,7 @@ public class WatchdogScheduledTask {
                     log.info("[Watchdog] {} is available again", camera.name());
                     state.setAvailable(true);
                     frameWorkerService.startWorker(camera);
+                    audioStreamService.startWorker(camera);
                 } else {
                     log.info("[Watchdog] {} is still unavailable", camera.name());
                 }
@@ -187,8 +197,9 @@ public class WatchdogScheduledTask {
                     "ffprobe",
                     "-v", "error",
                     "-rtsp_transport", "tcp",
-                    "-timeout", String.valueOf(Integer.parseInt(camera.rtspTimeoutUs()) / 1000),
+                    "-timeout", camera.rtspTimeoutUs(),
                     "-select_streams", "v:0",
+                    "-read_intervals", "%+#1",
                     "-show_entries", "frame=key_frame",
                     "-of", "csv=p=0",
                     camera.rtspUrl()
@@ -198,8 +209,14 @@ public class WatchdogScheduledTask {
             pb.redirectErrorStream(true);
             Process process = pb.start();
 
-            process.getInputStream().transferTo(new java.io.OutputStream() {
-                @Override public void write(int b) {}
+            Thread.startVirtualThread(() -> {
+                try {
+                    process.getInputStream().transferTo(java.io.OutputStream.nullOutputStream());
+                } catch (java.io.IOException e) {
+                    if (process.isAlive()) {
+                        log.debug("[Watchdog] Probe output failed for {}: {}", camera.name(), e.getMessage());
+                    }
+                }
             });
 
             boolean finished = process.waitFor(properties.watchdog().cameraProbeTimeoutSeconds(),
@@ -234,7 +251,7 @@ public class WatchdogScheduledTask {
 
                     [Events]
                     Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-                    Dialogue: 0,0:00:00.00,9:59:59.00,Offline,,0,0,0,,%s\\\\NCAMERA IS UNAVAILABLE
+                    Dialogue: 0,0:00:00.00,9:59:59.00,Offline,,0,0,0,,%s\\NCAMERA IS UNAVAILABLE
                     """, panelWidth, panelHeight, camera.label());
 
             java.nio.file.Files.writeString(java.nio.file.Path.of(camera.subtitlePath()), assContent);
@@ -281,8 +298,9 @@ public class WatchdogScheduledTask {
         started = false;
         probeFutures.forEach(f -> f.cancel(true));
         probeFutures.clear();
-        frameFeederService.stopAll();
-        frameWorkerService.stopAll();
         compositorService.stop();
+        frameFeederService.stopAll();
+        audioStreamService.stopAll();
+        frameWorkerService.stopAll();
     }
 }
