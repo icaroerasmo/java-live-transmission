@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  java-live-transmission:
+    build: .
+    restart: unless-stopped
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
+      - FFMPEG_PATH=ffmpeg
+      - FFMPEG_LOG_LEVEL=warning
+      - FFMPEG_RESTART_DELAY_SECONDS=5
+      # Camera 1
+      - CAMERA_1_NAME=${CAMERA_1_NAME:-Camera 1}
+      - CAMERA_1_RTSP_URL=${CAMERA_1_RTSP_URL}
+      - CAMERA_1_CHAT_ID=${CAMERA_1_CHAT_ID}
+    # Mount a custom application.yml if you need more than one camera
+    # volumes:
+    #   - ./config/application.yml:/app/config/application.yml:ro

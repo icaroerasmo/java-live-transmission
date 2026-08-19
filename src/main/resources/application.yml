@@ -1,0 +1,19 @@
+transmission:
+  bot-token: ${TELEGRAM_BOT_TOKEN}
+  bot-username: ${TELEGRAM_BOT_USERNAME}
+  ffmpeg-path: ${FFMPEG_PATH:ffmpeg}
+  ffmpeg-log-level: ${FFMPEG_LOG_LEVEL:warning}
+  ffmpeg-restart-delay-seconds: ${FFMPEG_RESTART_DELAY_SECONDS:5}
+  cameras:
+    - name: ${CAMERA_1_NAME:Camera 1}
+      rtsp-url: ${CAMERA_1_RTSP_URL}
+      chat-id: ${CAMERA_1_CHAT_ID}
+
+spring:
+  main:
+    banner-mode: off
+
+logging:
+  level:
+    root: INFO
+    com.icaroerasmo: DEBUG
