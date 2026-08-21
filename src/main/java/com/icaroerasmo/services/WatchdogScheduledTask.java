@@ -1,10 +1,10 @@
 package com.icaroerasmo.services;
 
 import com.icaroerasmo.enums.MessagesEnum;
+import com.icaroerasmo.messaging.NotificationPublisher;
 import com.icaroerasmo.properties.CameraProperties;
 import com.icaroerasmo.properties.LiveTransmissionProperties;
 import com.icaroerasmo.storage.CameraStateStorage;
-import com.icaroerasmo.util.TelegramUtil;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -41,7 +41,7 @@ public class WatchdogScheduledTask {
     private CameraStateStorage cameraStateStorage;
 
     @Autowired
-    private TelegramUtil telegramUtil;
+    private NotificationPublisher notificationPublisher;
 
     @Autowired
     private ExecutorService executorService;
@@ -91,7 +91,7 @@ public class WatchdogScheduledTask {
                 log.warn("[Watchdog] Compositor is not running, restarting");
             }
 
-            telegramUtil.sendMessage(MessagesEnum.COMPOSITOR_RESTARTING);
+            notificationPublisher.publish(MessagesEnum.COMPOSITOR_RESTARTING);
 
             stopAll();
             try {
@@ -120,7 +120,7 @@ public class WatchdogScheduledTask {
                         audioStreamService.stopWorker(camera.name());
                         activateFallbackImage(camera);
                         state.setNextProbeAt(now + properties.watchdog().cameraRetrySeconds());
-                        telegramUtil.sendMessage(MessagesEnum.CAMERA_UNAVAILABLE, camera.label(), "worker exited");
+                        notificationPublisher.publish(MessagesEnum.CAMERA_UNAVAILABLE, camera.label(), "worker exited");
                         log.warn("[Watchdog] {} worker exited, showing fallback", camera.name());
                     }
                 }
@@ -153,7 +153,7 @@ public class WatchdogScheduledTask {
                     audioStreamService.stopWorker(camera.name());
                     activateFallbackImage(camera);
                     state.setNextProbeAt(System.currentTimeMillis() / 1000 + properties.watchdog().cameraRetrySeconds());
-                    telegramUtil.sendMessage(MessagesEnum.CAMERA_UNAVAILABLE, camera.label(), reason);
+                    notificationPublisher.publish(MessagesEnum.CAMERA_UNAVAILABLE, camera.label(), reason);
                 }
             } else {
                 // Frame is fresh - mark as available if it wasn't before

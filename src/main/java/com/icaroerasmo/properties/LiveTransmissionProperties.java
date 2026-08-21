@@ -10,8 +10,7 @@ public record LiveTransmissionProperties(
         PanelProperties panel,
         InputProperties input,
         WatchdogProperties watchdog,
-        java.util.List<CameraProperties> cameras,
-        TelegramProperties telegram
+        java.util.List<CameraProperties> cameras
 ) {
     public record OutputProperties(
             String videoBitrate,
