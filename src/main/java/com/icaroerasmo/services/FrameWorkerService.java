@@ -1,12 +1,12 @@
 package com.icaroerasmo.services;
 
 import com.icaroerasmo.enums.MessagesEnum;
+import com.icaroerasmo.messaging.NotificationPublisher;
 import com.icaroerasmo.parsers.FrameWorkerCommandParser;
 import com.icaroerasmo.properties.CameraProperties;
 import com.icaroerasmo.properties.LiveTransmissionProperties;
 import com.icaroerasmo.runners.FfmpegRunner;
 import com.icaroerasmo.storage.CameraStateStorage;
-import com.icaroerasmo.util.TelegramUtil;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,7 +24,7 @@ public class FrameWorkerService {
     private LiveTransmissionProperties properties;
 
     @Autowired
-    private TelegramUtil telegramUtil;
+    private NotificationPublisher notificationPublisher;
 
     @Autowired
     private ExecutorService executorService;
@@ -53,7 +53,7 @@ public class FrameWorkerService {
             state.setLastChecksum(null);
             state.setSameFrameSince(null);
 
-            telegramUtil.sendMessage(MessagesEnum.CAMERA_STARTED, camera.label());
+            notificationPublisher.publish(MessagesEnum.CAMERA_STARTED, camera.label());
             log.info("[FrameWorker] Frame worker started for {}", camera.name());
         } else {
             log.error("[FrameWorker] Failed to start frame worker for {}", camera.name());
