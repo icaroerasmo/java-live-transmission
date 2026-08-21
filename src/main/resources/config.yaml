@@ -64,6 +64,11 @@ live:
       probesize: "${LIVE_AREA_DE_SERVICO_INPUT_PROBESIZE:10000000}"
       analyzeduration: "${LIVE_AREA_DE_SERVICO_INPUT_ANALYZEDURATION:5000000}"
       filter-fps: "${LIVE_AREA_DE_SERVICO_FILTER_FPS:10}"
-  telegram:
-    chat-id: "${TELEGRAM_CHAT_ID}"
-    bot-token: "${TELEGRAM_BOT_TOKEN}"
+spring:
+  rabbitmq:
+    host: '${RABBITMQ_HOST:localhost}'
+    port: ${RABBITMQ_PORT:5672}
+    username: '${RABBITMQ_USERNAME:guest}'
+    password: '${RABBITMQ_PASSWORD:guest}'
+    publisher-confirm-type: correlated
+    publisher-returns: true
