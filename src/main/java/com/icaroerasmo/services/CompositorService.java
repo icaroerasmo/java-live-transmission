@@ -1,10 +1,10 @@
 package com.icaroerasmo.services;
 
 import com.icaroerasmo.enums.MessagesEnum;
+import com.icaroerasmo.messaging.NotificationPublisher;
 import com.icaroerasmo.parsers.CompositorCommandParser;
 import com.icaroerasmo.properties.LiveTransmissionProperties;
 import com.icaroerasmo.runners.FfmpegRunner;
-import com.icaroerasmo.util.TelegramUtil;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,7 +21,7 @@ public class CompositorService {
     private LiveTransmissionProperties properties;
 
     @Autowired
-    private TelegramUtil telegramUtil;
+    private NotificationPublisher notificationPublisher;
 
     @Autowired
     private ExecutorService executorService;
@@ -44,7 +44,7 @@ public class CompositorService {
 
         if (process != null) {
             running = true;
-            telegramUtil.sendMessage(MessagesEnum.COMPOSITOR_STARTED);
+            notificationPublisher.publish(MessagesEnum.COMPOSITOR_STARTED);
             log.info("[Compositor] Compositor started with pid {}", process.pid());
 
             CompletableFuture.runAsync(() -> {
@@ -57,10 +57,10 @@ public class CompositorService {
                     if (exitCode == RTMP_BROKEN_PIPE_EXIT_CODE) {
                         rtmpFailures++;
                         log.warn("[Compositor] RTMP Broken pipe (failure #{})", rtmpFailures);
-                        telegramUtil.sendMessage(MessagesEnum.COMPOSITOR_STOPPED, "RTMP connection dropped");
+                        notificationPublisher.publish(MessagesEnum.COMPOSITOR_STOPPED, "RTMP connection dropped");
                     } else {
                         rtmpFailures = 0;
-                        telegramUtil.sendMessage(MessagesEnum.COMPOSITOR_STOPPED, "exit code: " + exitCode);
+                        notificationPublisher.publish(MessagesEnum.COMPOSITOR_STOPPED, "exit code: " + exitCode);
                     }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -68,7 +68,7 @@ public class CompositorService {
             }, executorService);
         } else {
             log.error("[Compositor] Failed to start compositor");
-            telegramUtil.sendMessage(MessagesEnum.COMPOSITOR_STOPPED, "failed to start");
+            notificationPublisher.publish(MessagesEnum.COMPOSITOR_STOPPED, "failed to start");
         }
     }
 
