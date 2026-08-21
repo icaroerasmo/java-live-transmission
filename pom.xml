@@ -13,7 +13,7 @@
 
     <groupId>com.icaroerasmo</groupId>
     <artifactId>java-live-transmission</artifactId>
-    <version>0.1.1</version>
+    <version>rabbitmq-notifications</version>
     <name>java-live-transmission</name>
     <description>YouTube live transmission service with camera frame compositing</description>
 
