@@ -24,11 +24,26 @@ public class DetectionStateStorage {
         states.put(cameraName, new DetectionState(label, System.currentTimeMillis()));
     }
 
-    public boolean expireStale(long ttlMs) {
+    public Set<String> detectChanges(long ttlMs) {
         long now = System.currentTimeMillis();
-        int before = states.size();
         states.entrySet().removeIf(e -> now - e.getValue().detectedAt() > ttlMs);
-        return states.size() != before;
+
+        Set<String> active = new HashSet<>(states.keySet());
+        Set<String> changed = new HashSet<>();
+        for (String camera : renderedActiveCameras) {
+            if (!active.contains(camera)) {
+                changed.add(camera);
+            }
+        }
+        for (String camera : active) {
+            if (!renderedActiveCameras.contains(camera)) {
+                changed.add(camera);
+            }
+        }
+
+        renderedActiveCameras.clear();
+        renderedActiveCameras.addAll(active);
+        return changed;
     }
 
     public Set<String> activeCameras() {
@@ -55,15 +70,6 @@ public class DetectionStateStorage {
         } catch (Exception e) {
             log.warn("Failed to write detection label file: {}", e.getMessage());
         }
-    }
-
-    public boolean markRenderedIfChanged(Set<String> activeCameras) {
-        if (renderedActiveCameras.equals(activeCameras)) {
-            return false;
-        }
-        renderedActiveCameras.clear();
-        renderedActiveCameras.addAll(activeCameras);
-        return true;
     }
 
     public record DetectionState(String label, long detectedAt) {
