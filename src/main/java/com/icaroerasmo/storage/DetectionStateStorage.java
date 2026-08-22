@@ -52,6 +52,10 @@ public class DetectionStateStorage {
         return new HashSet<>(states.keySet());
     }
 
+    public boolean isActive(String cameraName) {
+        return states.containsKey(cameraName);
+    }
+
     public String primaryLabel() {
         DetectionState latest = null;
         for (DetectionState state : states.values()) {

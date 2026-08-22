@@ -7,7 +7,6 @@ import com.icaroerasmo.properties.CameraProperties;
 import com.icaroerasmo.properties.LiveTransmissionProperties;
 import com.icaroerasmo.runners.FfmpegRunner;
 import com.icaroerasmo.storage.CameraStateStorage;
-import com.icaroerasmo.storage.DetectionStateStorage;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -33,27 +32,15 @@ public class FrameWorkerService {
     @Autowired
     private CameraStateStorage cameraStateStorage;
 
-    @Autowired
-    private DetectionStateStorage detectionStateStorage;
-
     private final Map<String, FfmpegRunner> runners = new ConcurrentHashMap<>();
 
     public void startWorker(CameraProperties camera) {
-        startWorker(camera, true);
-    }
-
-    public void restartWorkerForOverlay(CameraProperties camera) {
-        startWorker(camera, false);
-    }
-
-    private void startWorker(CameraProperties camera, boolean notify) {
         stopWorker(camera.name());
 
-        boolean activeDetection = detectionStateStorage.activeCameras().contains(camera.name());
         FfmpegRunner runner = new FfmpegRunner("frame-worker-" + camera.name());
-        List<String> command = FrameWorkerCommandParser.build(camera, properties, activeDetection);
+        List<String> command = FrameWorkerCommandParser.build(camera, properties);
 
-        log.info("[FrameWorker] Starting frame worker for {} (activeDetection={})", camera.name(), activeDetection);
+        log.info("[FrameWorker] Starting frame worker for {}", camera.name());
         Process process = runner.start(command);
 
         if (process != null) {
@@ -66,9 +53,7 @@ public class FrameWorkerService {
             state.setLastChecksum(null);
             state.setSameFrameSince(null);
 
-            if (notify) {
-                notificationPublisher.publish(MessagesEnum.CAMERA_STARTED, camera.label());
-            }
+            notificationPublisher.publish(MessagesEnum.CAMERA_STARTED, camera.label());
             log.info("[FrameWorker] Frame worker started for {}", camera.name());
         } else {
             log.error("[FrameWorker] Failed to start frame worker for {}", camera.name());
