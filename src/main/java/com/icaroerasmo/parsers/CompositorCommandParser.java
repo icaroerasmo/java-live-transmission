@@ -34,6 +34,20 @@ public class CompositorCommandParser {
             cmd.add(camera.pipePath());
         }
 
+        // Border overlay inputs (image2pipe PNG)
+        for (CameraProperties camera : cameras) {
+            cmd.add("-thread_queue_size");
+            cmd.add("8");
+            cmd.add("-framerate");
+            cmd.add(properties.output().fps());
+            cmd.add("-f");
+            cmd.add("image2pipe");
+            cmd.add("-vcodec");
+            cmd.add("png");
+            cmd.add("-i");
+            cmd.add(camera.borderPipePath());
+        }
+
         // Raw PCM inputs remain live because their feeders substitute silence
         // whenever a camera audio worker is unavailable.
         for (CameraProperties camera : cameras) {
@@ -53,20 +67,22 @@ public class CompositorCommandParser {
         int n = cameras.size();
         StringBuilder filter = new StringBuilder();
 
-        // Video: setpts for all camera panel inputs
+        // Video + border: setpts, then overlay the border onto each panel
         for (int i = 0; i < n; i++) {
             filter.append(String.format("[%d:v]setpts=PTS-STARTPTS[cam%d];", i, i));
+            filter.append(String.format("[%d:v]setpts=PTS-STARTPTS[border%d];", n + i, i));
+            filter.append(String.format("[cam%d][border%d]overlay=0:0:format=auto:shortest=0:eof_action=repeat:repeatlast=1[panel%d];", i, i, i));
         }
 
         // 2x2 grid layout
         if (n == 4) {
-            filter.append("[cam0][cam1]hstack=inputs=2[top];");
-            filter.append("[cam2][cam3]hstack=inputs=2[bottom];");
+            filter.append("[panel0][panel1]hstack=inputs=2[top];");
+            filter.append("[panel2][panel3]hstack=inputs=2[bottom];");
             filter.append("[top][bottom]vstack=inputs=2,");
         } else if (n == 2) {
-            filter.append("[cam0][cam1]hstack=inputs=2,");
+            filter.append("[panel0][panel1]hstack=inputs=2,");
         } else if (n == 1) {
-            filter.append("[cam0],");
+            filter.append("[panel0],");
         }
 
         // Bottom detection label (live-updatable via textfile reload)
@@ -84,7 +100,7 @@ public class CompositorCommandParser {
         // Audio: mix all camera audio tracks
         for (int i = 0; i < n; i++) {
             filter.append(String.format("[%d:a]aresample=%s:async=1:first_pts=0,volume=0.25[a%d];",
-                    n + i, properties.output().audioSampleRate(), i));
+                    2 * n + i, properties.output().audioSampleRate(), i));
         }
         for (int i = 0; i < n; i++) {
             filter.append(String.format("[a%d]", i));
