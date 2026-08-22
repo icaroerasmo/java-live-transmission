@@ -3,8 +3,10 @@ package com.icaroerasmo.storage;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -66,7 +68,14 @@ public class DetectionStateStorage {
 
     public void writeLabelFile() {
         try {
-            Files.writeString(Path.of(LABEL_FILE), primaryLabel());
+            Path target = Path.of(LABEL_FILE);
+            Path tmp = Path.of(LABEL_FILE + ".tmp");
+            Files.writeString(tmp, primaryLabel());
+            try {
+                Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
+            }
         } catch (Exception e) {
             log.warn("Failed to write detection label file: {}", e.getMessage());
         }
