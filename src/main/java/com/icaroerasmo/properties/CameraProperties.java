@@ -29,4 +29,8 @@ public record CameraProperties(
     public String audioPipePath() {
         return "/tmp/" + name.replaceAll("\\s+", "") + "-audio.pipe";
     }
+
+    public String borderPipePath() {
+        return "/tmp/" + name.replaceAll("\\s+", "") + "-border.pipe";
+    }
 }
