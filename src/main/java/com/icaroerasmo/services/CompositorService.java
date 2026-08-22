@@ -42,7 +42,7 @@ public class CompositorService {
 
         detectionStateStorage.ensureLabelFile();
         runner = new FfmpegRunner("compositor");
-        List<String> command = CompositorCommandParser.build(properties, detectionStateStorage.activeCameras());
+        List<String> command = CompositorCommandParser.build(properties);
 
         log.info("[Compositor] Starting compositor");
         Process process = runner.start(command);

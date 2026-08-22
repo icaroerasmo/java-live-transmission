@@ -6,11 +6,10 @@ import com.icaroerasmo.storage.DetectionStateStorage;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 public class CompositorCommandParser {
 
-    public static List<String> build(LiveTransmissionProperties properties, Set<String> activeCameras) {
+    public static List<String> build(LiveTransmissionProperties properties) {
         List<String> cmd = new ArrayList<>();
         cmd.add("ffmpeg");
         cmd.add("-hide_banner");
@@ -54,14 +53,9 @@ public class CompositorCommandParser {
         int n = cameras.size();
         StringBuilder filter = new StringBuilder();
 
-        // Video: setpts for all camera panel inputs (red border for cameras with active detection)
+        // Video: setpts for all camera panel inputs
         for (int i = 0; i < n; i++) {
-            CameraProperties camera = cameras.get(i);
-            if (activeCameras != null && activeCameras.contains(camera.name())) {
-                filter.append(String.format("[%d:v]setpts=PTS-STARTPTS,drawbox=x=0:y=0:w=iw:h=ih:color=red:t=6[cam%d];", i, i));
-            } else {
-                filter.append(String.format("[%d:v]setpts=PTS-STARTPTS[cam%d];", i, i));
-            }
+            filter.append(String.format("[%d:v]setpts=PTS-STARTPTS[cam%d];", i, i));
         }
 
         // 2x2 grid layout
