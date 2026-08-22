@@ -5,6 +5,7 @@ import com.icaroerasmo.messaging.NotificationPublisher;
 import com.icaroerasmo.parsers.CompositorCommandParser;
 import com.icaroerasmo.properties.LiveTransmissionProperties;
 import com.icaroerasmo.runners.FfmpegRunner;
+import com.icaroerasmo.storage.DetectionStateStorage;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,9 @@ public class CompositorService {
     @Autowired
     private ExecutorService executorService;
 
+    @Autowired
+    private DetectionStateStorage detectionStateStorage;
+
     private FfmpegRunner runner;
     private volatile boolean running;
     private volatile int lastExitCode = 0;
@@ -33,11 +37,12 @@ public class CompositorService {
 
     private static final int RTMP_BROKEN_PIPE_EXIT_CODE = 224;
 
-    public void start() {
+    public synchronized void start() {
         stop();
 
+        detectionStateStorage.ensureLabelFile();
         runner = new FfmpegRunner("compositor");
-        List<String> command = CompositorCommandParser.build(properties);
+        List<String> command = CompositorCommandParser.build(properties, detectionStateStorage.activeCameras());
 
         log.info("[Compositor] Starting compositor");
         Process process = runner.start(command);
@@ -72,7 +77,7 @@ public class CompositorService {
         }
     }
 
-    public void stop() {
+    public synchronized void stop() {
         if (runner != null) {
             runner.destroy();
             runner = null;

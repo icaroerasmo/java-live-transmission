@@ -1,11 +1,14 @@
 package com.icaroerasmo.config;
 
 import lombok.extern.log4j.Log4j2;
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.rabbit.annotation.EnableRabbit;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
@@ -17,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Log4j2
+@EnableRabbit
 @Configuration
 public class RabbitConfig {
 
@@ -25,6 +29,9 @@ public class RabbitConfig {
     public static final String TELEGRAM_ROUTING_KEY = "telegram.notifications";
     public static final String TELEGRAM_DLX = "telegram.dlx";
     public static final String TELEGRAM_DLQ_ROUTING_KEY = "telegram.notifications.dlq";
+    public static final String DETECTION_EXCHANGE = "detection.exchange";
+    public static final String DETECTION_QUEUE = "detection.events";
+    public static final String DETECTION_ROUTING_KEY = "detection.events";
 
     @Bean
     public DirectExchange telegramExchange() {
@@ -42,6 +49,21 @@ public class RabbitConfig {
     @Bean
     public Binding telegramNotificationsBinding() {
         return BindingBuilder.bind(telegramNotificationsQueue()).to(telegramExchange()).with(TELEGRAM_ROUTING_KEY);
+    }
+
+    @Bean
+    public DirectExchange detectionExchange() {
+        return new DirectExchange(DETECTION_EXCHANGE, true, false);
+    }
+
+    @Bean
+    public Queue detectionQueue() {
+        return QueueBuilder.durable(DETECTION_QUEUE).build();
+    }
+
+    @Bean
+    public Binding detectionBinding() {
+        return BindingBuilder.bind(detectionQueue()).to(detectionExchange()).with(DETECTION_ROUTING_KEY);
     }
 
     @Bean
@@ -63,5 +85,17 @@ public class RabbitConfig {
                 "RabbitMQ message returned: exchange={}, routingKey={}, replyCode={}, replyText={}",
                 returned.getExchange(), returned.getRoutingKey(), returned.getReplyCode(), returned.getReplyText()));
         return template;
+    }
+
+    @Bean(name = "rabbitListenerContainerFactory")
+    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
+            ConnectionFactory connectionFactory, MessageConverter messageConverter) {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setMessageConverter(messageConverter);
+        factory.setAcknowledgeMode(AcknowledgeMode.AUTO);
+        factory.setConcurrentConsumers(1);
+        factory.setMaxConcurrentConsumers(1);
+        return factory;
     }
 }
