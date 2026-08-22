@@ -30,9 +30,9 @@ public class DetectionOverlayTask {
     @Scheduled(fixedDelayString = "1000")
     public void sweep() {
         Set<String> changedCameras = storage.detectChanges(TTL_MS);
-        storage.writeLabelFile();
 
         if (!changedCameras.isEmpty()) {
+            storage.writeLabelFile();
             log.info("Detection overlay changed, restarting frame workers for cameras: {}", changedCameras);
             for (CameraProperties camera : properties.cameras()) {
                 if (changedCameras.contains(camera.name())) {
