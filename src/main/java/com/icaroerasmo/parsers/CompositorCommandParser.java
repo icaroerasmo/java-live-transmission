@@ -34,16 +34,18 @@ public class CompositorCommandParser {
             cmd.add(camera.pipePath());
         }
 
-        // Border overlay inputs (image2pipe PNG)
+        // Border overlay inputs (raw RGBA, minimal buffering for low latency)
         for (CameraProperties camera : cameras) {
             cmd.add("-thread_queue_size");
-            cmd.add("8");
+            cmd.add("1");
             cmd.add("-framerate");
             cmd.add(properties.output().fps());
             cmd.add("-f");
-            cmd.add("image2pipe");
-            cmd.add("-vcodec");
-            cmd.add("png");
+            cmd.add("rawvideo");
+            cmd.add("-pix_fmt");
+            cmd.add("rgba");
+            cmd.add("-video_size");
+            cmd.add(properties.panel().width() + "x" + properties.panel().height());
             cmd.add("-i");
             cmd.add(camera.borderPipePath());
         }
