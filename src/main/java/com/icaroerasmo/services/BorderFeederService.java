@@ -7,11 +7,6 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.imageio.ImageIO;
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,9 +21,7 @@ import java.util.concurrent.locks.LockSupport;
 @Service
 public class BorderFeederService {
 
-    public static final String BORDER_RED_IMAGE = "/tmp/border-red.png";
-    public static final String BORDER_CLEAR_IMAGE = "/tmp/border-clear.png";
-    private static final int BORDER_THICKNESS = 8;
+    private static final int BORDER_THICKNESS = 4;
 
     @Autowired
     private LiveTransmissionProperties properties;
@@ -39,28 +32,37 @@ public class BorderFeederService {
     private final Map<String, AtomicBoolean> feeders = new ConcurrentHashMap<>();
     private final Map<String, Thread> feederThreads = new ConcurrentHashMap<>();
 
+    private volatile byte[] redBorderBytes = new byte[0];
+    private volatile byte[] clearBorderBytes = new byte[0];
+
     public void generateBorderImages() {
         try {
             int width = Integer.parseInt(properties.panel().width());
             int height = Integer.parseInt(properties.panel().height());
-
-            BufferedImage red = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g = red.createGraphics();
-            g.setColor(new Color(255, 0, 0, 255));
             int t = BORDER_THICKNESS;
-            g.fillRect(0, 0, width, t);
-            g.fillRect(0, height - t, width, t);
-            g.fillRect(0, 0, t, height);
-            g.fillRect(width - t, 0, t, height);
-            g.dispose();
-            ImageIO.write(red, "png", new File(BORDER_RED_IMAGE));
+            int pixelCount = width * height;
 
-            BufferedImage clear = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-            ImageIO.write(clear, "png", new File(BORDER_CLEAR_IMAGE));
+            byte[] red = new byte[pixelCount * 4];
+            byte[] clear = new byte[pixelCount * 4]; // all zeros = fully transparent
 
-            log.info("[BorderFeeder] Generated border images ({}x{})", width, height);
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    if (x < t || x >= width - t || y < t || y >= height - t) {
+                        int idx = (y * width + x) * 4;
+                        red[idx] = (byte) 255;     // R
+                        red[idx + 1] = 0;          // G
+                        red[idx + 2] = 0;          // B
+                        red[idx + 3] = (byte) 255; // A
+                    }
+                }
+            }
+
+            this.redBorderBytes = red;
+            this.clearBorderBytes = clear;
+
+            log.info("[BorderFeeder] Generated border buffers ({}x{}, thickness {})", width, height, t);
         } catch (Exception e) {
-            log.error("[BorderFeeder] Failed to generate border images", e);
+            log.error("[BorderFeeder] Failed to generate border buffers", e);
         }
     }
 
@@ -91,16 +93,13 @@ public class BorderFeederService {
         double fps = Double.parseDouble(properties.output().fps());
         long intervalNanos = (long) (TimeUnit.SECONDS.toNanos(1) / fps);
 
-        byte[] redBytes = readImage(BORDER_RED_IMAGE);
-        byte[] clearBytes = readImage(BORDER_CLEAR_IMAGE);
-
         Thread feederThread = Thread.ofVirtual().name("border-feeder-" + camera.name()).start(() -> {
             log.info("[BorderFeeder] Started feeder for {}", camera.name());
             try (FileOutputStream fos = new FileOutputStream(pipePath.toString())) {
                 long nextWrite = System.nanoTime();
                 while (running.get()) {
                     try {
-                        byte[] bytes = detectionStateStorage.isActive(camera.name()) ? redBytes : clearBytes;
+                        byte[] bytes = detectionStateStorage.isActive(camera.name()) ? redBorderBytes : clearBorderBytes;
                         if (bytes != null && bytes.length > 0) {
                             fos.write(bytes);
                             fos.flush();
@@ -127,15 +126,6 @@ public class BorderFeederService {
         });
 
         feederThreads.put(camera.name(), feederThread);
-    }
-
-    private byte[] readImage(String path) {
-        try {
-            return Files.readAllBytes(Path.of(path));
-        } catch (IOException e) {
-            log.error("[BorderFeeder] Failed to read image {}", path, e);
-            return null;
-        }
     }
 
     public void stop(String cameraName) {

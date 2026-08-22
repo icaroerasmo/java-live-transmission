@@ -11,7 +11,7 @@ import java.util.Set;
 @Component
 public class DetectionOverlayTask {
 
-    private static final long TTL_MS = 8_000;
+    private static final long TTL_MS = 5_000;
 
     private final DetectionStateStorage storage;
 
