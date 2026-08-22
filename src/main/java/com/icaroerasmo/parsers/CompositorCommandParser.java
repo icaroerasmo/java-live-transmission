@@ -2,13 +2,15 @@ package com.icaroerasmo.parsers;
 
 import com.icaroerasmo.properties.CameraProperties;
 import com.icaroerasmo.properties.LiveTransmissionProperties;
+import com.icaroerasmo.storage.DetectionStateStorage;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class CompositorCommandParser {
 
-    public static List<String> build(LiveTransmissionProperties properties) {
+    public static List<String> build(LiveTransmissionProperties properties, Set<String> activeCameras) {
         List<String> cmd = new ArrayList<>();
         cmd.add("ffmpeg");
         cmd.add("-hide_banner");
@@ -52,9 +54,14 @@ public class CompositorCommandParser {
         int n = cameras.size();
         StringBuilder filter = new StringBuilder();
 
-        // Video: setpts for all camera panel inputs
+        // Video: setpts for all camera panel inputs (red border for cameras with active detection)
         for (int i = 0; i < n; i++) {
-            filter.append(String.format("[%d:v]setpts=PTS-STARTPTS[cam%d];", i, i));
+            CameraProperties camera = cameras.get(i);
+            if (activeCameras != null && activeCameras.contains(camera.name())) {
+                filter.append(String.format("[%d:v]setpts=PTS-STARTPTS,drawbox=x=0:y=0:w=iw:h=ih:color=red:t=6[cam%d];", i, i));
+            } else {
+                filter.append(String.format("[%d:v]setpts=PTS-STARTPTS[cam%d];", i, i));
+            }
         }
 
         // 2x2 grid layout
@@ -67,6 +74,12 @@ public class CompositorCommandParser {
         } else if (n == 1) {
             filter.append("[cam0],");
         }
+
+        // Bottom detection label (live-updatable via textfile reload)
+        filter.append(String.format(
+                "drawtext=textfile=%s:reload=1:fontfile=%s:fontcolor=white:fontsize=28:"
+                        + "box=1:boxcolor=black@0.6:boxborderw=12:x=(w-text_w)/2:y=h-text_h-24,",
+                DetectionStateStorage.LABEL_FILE, DetectionStateStorage.FONT_FILE));
 
         filter.append(String.format(
                 "fps=%s,scale=in_range=pc:out_range=tv:out_color_matrix=bt709,"
