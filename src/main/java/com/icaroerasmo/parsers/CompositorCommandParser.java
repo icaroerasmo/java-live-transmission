@@ -10,6 +10,8 @@ import java.util.List;
 public class CompositorCommandParser {
 
     public static List<String> build(LiveTransmissionProperties properties) {
+        boolean overlayEnabled = properties.detectionOverlay() == null || properties.detectionOverlay().enabled();
+
         List<String> cmd = new ArrayList<>();
         cmd.add("ffmpeg");
         cmd.add("-hide_banner");
@@ -19,8 +21,9 @@ public class CompositorCommandParser {
         cmd.add("-nostats");
 
         List<CameraProperties> cameras = properties.cameras();
+        int n = cameras.size();
 
-        // Image2pipe inputs from frame workers (video)
+        // Video inputs (frame workers) - image2pipe MJPEG
         for (CameraProperties camera : cameras) {
             cmd.add("-thread_queue_size");
             cmd.add("8");
@@ -34,24 +37,25 @@ public class CompositorCommandParser {
             cmd.add(camera.pipePath());
         }
 
-        // Border overlay inputs (raw RGBA, minimal buffering for low latency)
-        for (CameraProperties camera : cameras) {
-            cmd.add("-thread_queue_size");
-            cmd.add("1");
-            cmd.add("-framerate");
-            cmd.add(properties.output().fps());
-            cmd.add("-f");
-            cmd.add("rawvideo");
-            cmd.add("-pix_fmt");
-            cmd.add("rgba");
-            cmd.add("-video_size");
-            cmd.add(properties.panel().width() + "x" + properties.panel().height());
-            cmd.add("-i");
-            cmd.add(camera.borderPipePath());
+        // Border mask inputs (raw gray), only when overlay enabled
+        if (overlayEnabled) {
+            for (CameraProperties camera : cameras) {
+                cmd.add("-thread_queue_size");
+                cmd.add("1");
+                cmd.add("-framerate");
+                cmd.add(properties.output().fps());
+                cmd.add("-f");
+                cmd.add("rawvideo");
+                cmd.add("-pix_fmt");
+                cmd.add("gray");
+                cmd.add("-video_size");
+                cmd.add(properties.panel().width() + "x" + properties.panel().height());
+                cmd.add("-i");
+                cmd.add(camera.borderPipePath());
+            }
         }
 
-        // Raw PCM inputs remain live because their feeders substitute silence
-        // whenever a camera audio worker is unavailable.
+        // Raw PCM audio inputs
         for (CameraProperties camera : cameras) {
             cmd.add("-thread_queue_size");
             cmd.add("8");
@@ -65,33 +69,58 @@ public class CompositorCommandParser {
             cmd.add(camera.audioPipePath());
         }
 
-        // Build filter complex
-        int n = cameras.size();
+        int audioInputStart = overlayEnabled ? (2 * n) : n;
+
         StringBuilder filter = new StringBuilder();
 
-        // Video + border: setpts, then overlay the border onto each panel
-        for (int i = 0; i < n; i++) {
-            filter.append(String.format("[%d:v]setpts=PTS-STARTPTS[cam%d];", i, i));
-            filter.append(String.format("[%d:v]setpts=PTS-STARTPTS[border%d];", n + i, i));
-            filter.append(String.format("[cam%d][border%d]overlay=0:0:format=auto:shortest=0:eof_action=repeat:repeatlast=1[panel%d];", i, i, i));
-        }
+        if (overlayEnabled) {
+            String panelW = properties.panel().width();
+            String panelH = properties.panel().height();
+            String fps = properties.output().fps();
 
-        // 2x2 grid layout
-        if (n == 4) {
-            filter.append("[panel0][panel1]hstack=inputs=2[top];");
-            filter.append("[panel2][panel3]hstack=inputs=2[bottom];");
-            filter.append("[top][bottom]vstack=inputs=2,");
-        } else if (n == 2) {
-            filter.append("[panel0][panel1]hstack=inputs=2,");
-        } else if (n == 1) {
-            filter.append("[panel0],");
-        }
+            for (int i = 0; i < n; i++) {
+                filter.append(String.format("[%d:v]setpts=PTS-STARTPTS[cam%d];", i, i));
+            }
+            for (int i = 0; i < n; i++) {
+                filter.append(String.format("[%d:v]setpts=PTS-STARTPTS[mask%d];", n + i, i));
+            }
+            for (int i = 0; i < n; i++) {
+                filter.append(String.format(
+                        "color=red:size=%sx%s:rate=%s,setpts=PTS-STARTPTS[red%d];"
+                                + "[red%d][mask%d]alphamerge[rgba%d];"
+                                + "[cam%d][rgba%d]overlay=0:0:format=auto[panel%d];",
+                        panelW, panelH, fps, i, i, i, i, i, i, i));
+            }
 
-        // Bottom detection label (live-updatable via textfile reload)
-        filter.append(String.format(
-                "drawtext=textfile=%s:reload=1:fontfile=%s:fontcolor=white:fontsize=28:"
-                        + "box=1:boxcolor=black@0.6:boxborderw=12:x=(w-text_w)/2:y=h-text_h-24,",
-                DetectionStateStorage.LABEL_FILE, DetectionStateStorage.FONT_FILE));
+            if (n == 4) {
+                filter.append("[panel0][panel1]hstack=inputs=2[top];");
+                filter.append("[panel2][panel3]hstack=inputs=2[bottom];");
+                filter.append("[top][bottom]vstack=inputs=2,");
+            } else if (n == 2) {
+                filter.append("[panel0][panel1]hstack=inputs=2,");
+            } else if (n == 1) {
+                filter.append("[panel0],");
+            }
+
+            filter.append(String.format(
+                    "drawtext=textfile=%s:reload=1:fontfile=%s:fontcolor=white:fontsize=28:"
+                            + "box=1:boxcolor=black@0.6:boxborderw=12:x=(w-text_w)/2:y=h-text_h-24,",
+                    DetectionStateStorage.LABEL_FILE, DetectionStateStorage.FONT_FILE));
+        } else {
+            for (int i = 0; i < n; i++) {
+                filter.append(String.format("[%d:v]setpts=PTS-STARTPTS[cam%d];", i, i));
+            }
+
+            if (n == 4) {
+                filter.append("[cam0][cam1]hstack=inputs=2[top];");
+                filter.append("[cam2][cam3]hstack=inputs=2[bottom];");
+                filter.append("[top][bottom]vstack=inputs=2,");
+            } else if (n == 2) {
+                filter.append("[cam0][cam1]hstack=inputs=2,");
+            } else if (n == 1) {
+                filter.append("[cam0],");
+            }
+        }
 
         filter.append(String.format(
                 "fps=%s,scale=in_range=pc:out_range=tv:out_color_matrix=bt709,"
@@ -102,7 +131,7 @@ public class CompositorCommandParser {
         // Audio: mix all camera audio tracks
         for (int i = 0; i < n; i++) {
             filter.append(String.format("[%d:a]aresample=%s:async=1:first_pts=0,volume=0.25[a%d];",
-                    2 * n + i, properties.output().audioSampleRate(), i));
+                    audioInputStart + i, properties.output().audioSampleRate(), i));
         }
         for (int i = 0; i < n; i++) {
             filter.append(String.format("[a%d]", i));
@@ -117,7 +146,7 @@ public class CompositorCommandParser {
         cmd.add("-map");
         cmd.add("[outa]");
 
-        // Video encoding - matches Perl script exactly (h264_nvenc defaults)
+        // Video encoding
         cmd.add("-c:v");
         cmd.add(properties.output().videoCodec());
         cmd.add("-preset");

@@ -32,8 +32,8 @@ public class BorderFeederService {
     private final Map<String, AtomicBoolean> feeders = new ConcurrentHashMap<>();
     private final Map<String, Thread> feederThreads = new ConcurrentHashMap<>();
 
-    private volatile byte[] redBorderBytes = new byte[0];
-    private volatile byte[] clearBorderBytes = new byte[0];
+    private volatile byte[] borderMaskBytes = new byte[0];
+    private volatile byte[] clearMaskBytes = new byte[0];
 
     public void generateBorderImages() {
         try {
@@ -42,27 +42,23 @@ public class BorderFeederService {
             int t = BORDER_THICKNESS;
             int pixelCount = width * height;
 
-            byte[] red = new byte[pixelCount * 4];
-            byte[] clear = new byte[pixelCount * 4]; // all zeros = fully transparent
+            byte[] border = new byte[pixelCount];
+            byte[] clear = new byte[pixelCount]; // all zeros = no border
 
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
                     if (x < t || x >= width - t || y < t || y >= height - t) {
-                        int idx = (y * width + x) * 4;
-                        red[idx] = (byte) 255;     // R
-                        red[idx + 1] = 0;          // G
-                        red[idx + 2] = 0;          // B
-                        red[idx + 3] = (byte) 255; // A
+                        border[y * width + x] = (byte) 255;
                     }
                 }
             }
 
-            this.redBorderBytes = red;
-            this.clearBorderBytes = clear;
+            this.borderMaskBytes = border;
+            this.clearMaskBytes = clear;
 
-            log.info("[BorderFeeder] Generated border buffers ({}x{}, thickness {})", width, height, t);
+            log.info("[BorderFeeder] Generated border masks ({}x{}, thickness {})", width, height, t);
         } catch (Exception e) {
-            log.error("[BorderFeeder] Failed to generate border buffers", e);
+            log.error("[BorderFeeder] Failed to generate border masks", e);
         }
     }
 
@@ -99,7 +95,7 @@ public class BorderFeederService {
                 long nextWrite = System.nanoTime();
                 while (running.get()) {
                     try {
-                        byte[] bytes = detectionStateStorage.isActive(camera.name()) ? redBorderBytes : clearBorderBytes;
+                        byte[] bytes = detectionStateStorage.isActive(camera.name()) ? borderMaskBytes : clearMaskBytes;
                         if (bytes != null && bytes.length > 0) {
                             fos.write(bytes);
                             fos.flush();

@@ -60,6 +60,8 @@ public class WatchdogScheduledTask {
     public void startAll() {
         log.info("[Watchdog] Starting all services");
 
+        boolean overlayEnabled = properties.detectionOverlay() == null || properties.detectionOverlay().enabled();
+
         for (CameraProperties camera : properties.cameras()) {
             generateFallbackImage(camera);
         }
@@ -68,12 +70,16 @@ public class WatchdogScheduledTask {
             frameWorkerService.startWorker(camera);
         }
 
-        borderFeederService.generateBorderImages();
+        if (overlayEnabled) {
+            borderFeederService.generateBorderImages();
+        }
 
         for (CameraProperties camera : properties.cameras()) {
             frameFeederService.startFeeder(camera);
             audioStreamService.start(camera);
-            borderFeederService.start(camera);
+            if (overlayEnabled) {
+                borderFeederService.start(camera);
+            }
         }
 
         compositorService.start();
