@@ -38,6 +38,9 @@ public class WatchdogScheduledTask {
     private AudioStreamService audioStreamService;
 
     @Autowired
+    private BorderFeederService borderFeederService;
+
+    @Autowired
     private CameraStateStorage cameraStateStorage;
 
     @Autowired
@@ -65,9 +68,12 @@ public class WatchdogScheduledTask {
             frameWorkerService.startWorker(camera);
         }
 
+        borderFeederService.generateBorderImages();
+
         for (CameraProperties camera : properties.cameras()) {
             frameFeederService.startFeeder(camera);
             audioStreamService.start(camera);
+            borderFeederService.start(camera);
         }
 
         compositorService.start();
@@ -300,6 +306,7 @@ public class WatchdogScheduledTask {
         probeFutures.clear();
         compositorService.stop();
         frameFeederService.stopAll();
+        borderFeederService.stopAll();
         audioStreamService.stopAll();
         frameWorkerService.stopAll();
     }

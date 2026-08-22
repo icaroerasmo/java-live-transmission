@@ -8,7 +8,7 @@ import java.util.List;
 
 public class FrameWorkerCommandParser {
 
-    public static List<String> build(CameraProperties camera, LiveTransmissionProperties properties, boolean activeDetection) {
+    public static List<String> build(CameraProperties camera, LiveTransmissionProperties properties) {
         List<String> cmd = new ArrayList<>();
         cmd.add("ffmpeg");
         cmd.add("-hide_banner");
@@ -35,20 +35,16 @@ public class FrameWorkerCommandParser {
         String panelHeight = properties.panel().height();
         String fps = camera.filterFps();
 
-        String baseFilter = String.format(
+        String filter = String.format(
                 "fps=%s,showinfo@%s,"
                         + "setpts=PTS-STARTPTS,split=2[bg_src][fg_src];"
                         + "[bg_src]scale=%s:%s:force_original_aspect_ratio=increase,crop=%s:%s,boxblur=12:1,setsar=1[bg];"
                         + "[fg_src]scale=%s:%s:force_original_aspect_ratio=decrease,setsar=1[fg];"
-                        + "[bg][fg]overlay=(W-w)/2:(H-h)/2,format=yuvj420p",
+                        + "[bg][fg]overlay=(W-w)/2:(H-h)/2,format=yuvj420p[out]",
                 fps, camera.name(),
                 panelWidth, panelHeight, panelWidth, panelHeight,
                 panelWidth, panelHeight
         );
-
-        String filter = activeDetection
-                ? baseFilter + ",drawbox=x=0:y=0:w=iw:h=ih:color=red:t=8[out]"
-                : baseFilter + "[out]";
 
         cmd.add("-filter_complex");
         cmd.add(filter);
