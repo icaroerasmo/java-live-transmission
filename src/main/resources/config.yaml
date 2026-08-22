@@ -31,6 +31,8 @@ live:
     camera-retry-seconds: "${LIVE_CAMERA_RETRY_SECONDS:10}"
     camera-probe-timeout-seconds: "${LIVE_CAMERA_PROBE_TIMEOUT_SECONDS:8}"
     restart-delay-seconds: "${LIVE_RESTART_DELAY:5}"
+  detection-overlay:
+    enabled: "${LIVE_DETECTION_OVERLAY_ENABLED:true}"
   cameras:
     - name: garagem1
       label: "GARAGEM 1"

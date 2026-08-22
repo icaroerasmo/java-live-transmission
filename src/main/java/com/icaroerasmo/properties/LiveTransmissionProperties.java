@@ -10,6 +10,7 @@ public record LiveTransmissionProperties(
         PanelProperties panel,
         InputProperties input,
         WatchdogProperties watchdog,
+        DetectionOverlayProperties detectionOverlay,
         java.util.List<CameraProperties> cameras
 ) {
     public record OutputProperties(
@@ -48,5 +49,9 @@ public record LiveTransmissionProperties(
             int cameraRetrySeconds,
             int cameraProbeTimeoutSeconds,
             int restartDelaySeconds
+    ) {}
+
+    public record DetectionOverlayProperties(
+            boolean enabled
     ) {}
 }
