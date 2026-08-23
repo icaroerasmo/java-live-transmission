@@ -4,6 +4,7 @@ import com.icaroerasmo.enums.MessagesEnum;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -21,6 +22,7 @@ public class NotificationPublisher {
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
+    @Async
     public void publish(MessagesEnum template, Object... args) {
         List<String> stringArgs = Arrays.stream(args)
                 .map(String::valueOf)
