@@ -15,12 +15,15 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.HashMap;
 import java.util.Map;
 
 @Log4j2
 @EnableRabbit
+@EnableAsync
 @Configuration
 public class RabbitConfig {
 
@@ -85,6 +88,17 @@ public class RabbitConfig {
                 "RabbitMQ message returned: exchange={}, routingKey={}, replyCode={}, replyText={}",
                 returned.getExchange(), returned.getRoutingKey(), returned.getReplyCode(), returned.getReplyText()));
         return template;
+    }
+
+    @Bean(name = "taskExecutor")
+    public ThreadPoolTaskExecutor taskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(8);
+        executor.setQueueCapacity(200);
+        executor.setThreadNamePrefix("async-publish-");
+        executor.initialize();
+        return executor;
     }
 
     @Bean(name = "rabbitListenerContainerFactory")
