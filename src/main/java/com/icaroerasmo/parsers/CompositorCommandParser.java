@@ -26,7 +26,7 @@ public class CompositorCommandParser {
         // Video inputs (frame workers) - image2pipe MJPEG
         for (CameraProperties camera : cameras) {
             cmd.add("-thread_queue_size");
-            cmd.add("8");
+            cmd.add("3");
             cmd.add("-framerate");
             cmd.add(properties.output().fps());
             cmd.add("-f");
