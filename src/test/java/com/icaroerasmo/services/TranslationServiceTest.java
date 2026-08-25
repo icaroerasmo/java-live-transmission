@@ -32,4 +32,9 @@ class TranslationServiceTest {
     void shouldTranslatePetDetectedToPtBr() {
         assertEquals("Animal detectado", translationService.translate("PET_DETECTED"));
     }
+
+    @Test
+    void shouldTranslateCarDetectedToPtBr() {
+        assertEquals("Carro detectado", translationService.translate("CAR_DETECTED"));
+    }
 }
