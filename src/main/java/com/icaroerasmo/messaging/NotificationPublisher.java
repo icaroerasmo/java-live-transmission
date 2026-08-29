@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -18,6 +20,7 @@ public class NotificationPublisher {
     private static final String SENDER = "live-transmission";
     private static final String EXCHANGE = "telegram.exchange";
     private static final String ROUTING_KEY = "telegram.notifications";
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
@@ -28,6 +31,7 @@ public class NotificationPublisher {
                 .map(String::valueOf)
                 .toList();
 
+        String sentAt = LocalDateTime.now().format(DATE_TIME_FORMATTER);
         NotificationMessage message = new NotificationMessage(
                 UUID.randomUUID().toString(),
                 SENDER,
@@ -37,7 +41,8 @@ public class NotificationPublisher {
                 null,
                 null,
                 null,
-                false);
+                false,
+                sentAt);
 
         try {
             rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY, message);
