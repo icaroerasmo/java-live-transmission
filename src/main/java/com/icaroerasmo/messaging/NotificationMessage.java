@@ -11,7 +11,8 @@ public record NotificationMessage(
         String rawHtml,
         String filename,
         byte[] payload,
-        boolean appendNoLogs) {
+        boolean appendNoLogs,
+        String sentAt) {
 
     public enum MediaType { TEXT, PHOTO, ANIMATION, DOCUMENT }
 }
