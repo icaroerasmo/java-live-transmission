@@ -108,8 +108,8 @@ public class RabbitConfig {
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(messageConverter);
         factory.setAcknowledgeMode(AcknowledgeMode.AUTO);
-        factory.setConcurrentConsumers(1);
-        factory.setMaxConcurrentConsumers(1);
+        factory.setConcurrentConsumers(4);
+        factory.setMaxConcurrentConsumers(8);
         return factory;
     }
 }
