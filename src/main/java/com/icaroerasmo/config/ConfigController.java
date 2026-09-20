@@ -32,7 +32,7 @@ public class ConfigController {
             } catch (InterruptedException ignored) {
                 Thread.currentThread().interrupt();
             }
-            System.exit(0);
+            Runtime.getRuntime().halt(0);
         });
         shutdownThread.setDaemon(true);
         shutdownThread.start();
