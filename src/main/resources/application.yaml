@@ -1,8 +1,16 @@
 spring:
   main:
-    web-application-type: none
     banner-mode: off
   version: @project.version@
+
+app:
+  config-file-path: /app/config/config.yaml
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
 
 logging:
   level:
