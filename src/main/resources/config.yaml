@@ -1,6 +1,5 @@
 live:
-  rtmp-url: "${LIVE_RTMP_URL}"
-  stream-key: "${LIVE_STREAM_KEY}"
+  rtsp-url: "${LIVE_RTSP_URL:rtsp://go2rtc:8554/panel}"
   output:
     video-bitrate: "${LIVE_VIDEO_BITRATE:1200k}"
     maxrate: "${LIVE_MAXRATE:1500k}"

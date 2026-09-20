@@ -24,7 +24,7 @@ class BorderFeederServiceTest {
         BorderFeederService service = new BorderFeederService();
 
         LiveTransmissionProperties properties = new LiveTransmissionProperties(
-                null, null, null,
+                null, null,
                 new LiveTransmissionProperties.PanelProperties(String.valueOf(WIDTH), String.valueOf(HEIGHT)),
                 null, null, null, null
         );

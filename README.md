@@ -1,7 +1,7 @@
 # java-live-transmission
 
-Streams a four-camera RTSP grid with mixed audio to a configurable RTMP endpoint
-(configured via `LIVE_RTMP_URL` / `LIVE_STREAM_KEY`).
+Streams a four-camera RTSP grid with mixed audio to a configurable RTSP endpoint
+(configured via `LIVE_RTSP_URL`).
 Camera audio is isolated behind paced PCM feeders, allowing an unavailable
 camera to switch to SMPTE bars and silence without stalling the shared stream.
 

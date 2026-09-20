@@ -4,8 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties("live")
 public record LiveTransmissionProperties(
-        String rtmpUrl,
-        String streamKey,
+        String rtspUrl,
         OutputProperties output,
         PanelProperties panel,
         InputProperties input,

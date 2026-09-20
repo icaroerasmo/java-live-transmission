@@ -93,12 +93,12 @@ public class WatchdogScheduledTask {
 
         // Check compositor health
         if (!compositorService.isRunning()) {
-            int rtmpFailures = compositorService.getRtmpFailures();
+            int compositorFailures = compositorService.getCompositorFailures();
             long delaySeconds = properties.watchdog().restartDelaySeconds();
 
-            if (rtmpFailures > 0) {
-                delaySeconds = Math.min(300, delaySeconds * (long) Math.pow(2, Math.min(rtmpFailures, 5)));
-                log.warn("[Watchdog] Compositor RTMP failure #{} — backing off {}s", rtmpFailures, delaySeconds);
+            if (compositorFailures > 0) {
+                delaySeconds = Math.min(300, delaySeconds * (long) Math.pow(2, Math.min(compositorFailures, 5)));
+                log.warn("[Watchdog] Compositor failure #{} — backing off {}s", compositorFailures, delaySeconds);
             } else {
                 log.warn("[Watchdog] Compositor is not running, restarting");
             }
