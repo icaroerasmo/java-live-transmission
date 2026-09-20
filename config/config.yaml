@@ -1,46 +1,46 @@
 live:
-  rtsp-url: "${LIVE_RTSP_URL:rtsp://go2rtc:8554/panel}"
+  rtsp-url: ${LIVE_RTSP_URL:rtsp://go2rtc:8554/panel}
   output:
-    video-bitrate: "${LIVE_VIDEO_BITRATE:1200k}"
-    maxrate: "${LIVE_MAXRATE:1500k}"
-    bufsize: "${LIVE_BUFSIZE:3000k}"
-    fps: "${LIVE_FPS:30}"
-    gop: "${LIVE_GOP:60}"
-    width: "${LIVE_OUTPUT_WIDTH:1280}"
-    height: "${LIVE_PANEL_HEIGHT:720}"
-    video-codec: "${LIVE_VIDEO_CODEC:h264_nvenc}"
-    video-preset: "${LIVE_VIDEO_PRESET:p4}"
-    output-tune: "${LIVE_OUTPUT_TUNE:ll}"
+    video-bitrate: ${LIVE_VIDEO_BITRATE:1200k}
+    maxrate: ${LIVE_MAXRATE:1500k}
+    bufsize: ${LIVE_BUFSIZE:3000k}
+    fps: ${LIVE_FPS:30}
+    gop: ${LIVE_GOP:60}
+    width: ${LIVE_OUTPUT_WIDTH:1280}
+    height: ${LIVE_PANEL_HEIGHT:720}
+    video-codec: ${LIVE_VIDEO_CODEC:h264_nvenc}
+    video-preset: ${LIVE_VIDEO_PRESET:p4}
+    output-tune: ${LIVE_OUTPUT_TUNE:ll}
     audio-codec: aac
     audio-bitrate: 128k
     audio-sample-rate: 44100
     audio-channels: 2
   panel:
-    width: "${LIVE_PANEL_WIDTH:640}"
-    height: "${LIVE_PANEL_HEIGHT:360}"
+    width: ${LIVE_PANEL_WIDTH:640}
+    height: ${LIVE_PANEL_HEIGHT:360}
   input:
-    thread-queue-size: "${LIVE_INPUT_THREAD_QUEUE_SIZE:256}"
-    rtsp-timeout-us: "${LIVE_RTSP_TIMEOUT_US:5000000}"
-    probesize: "${LIVE_INPUT_PROBESIZE:5000000}"
-    analyzeduration: "${LIVE_INPUT_ANALYZEDURATION:5000000}"
+    thread-queue-size: ${LIVE_INPUT_THREAD_QUEUE_SIZE:256}
+    rtsp-timeout-us: ${LIVE_RTSP_TIMEOUT_US:5000000}
+    probesize: ${LIVE_INPUT_PROBESIZE:5000000}
+    analyzeduration: ${LIVE_INPUT_ANALYZEDURATION:5000000}
   watchdog:
-    frame-timeout-seconds: "${LIVE_FRAME_TIMEOUT_SECONDS:20}"
-    startup-frame-timeout-seconds: "${LIVE_STARTUP_FRAME_TIMEOUT_SECONDS:30}"
-    static-frame-seconds: "${LIVE_STATIC_FRAME_SECONDS:3}"
-    camera-retry-seconds: "${LIVE_CAMERA_RETRY_SECONDS:10}"
-    camera-probe-timeout-seconds: "${LIVE_CAMERA_PROBE_TIMEOUT_SECONDS:8}"
-    restart-delay-seconds: "${LIVE_RESTART_DELAY:5}"
+    frame-timeout-seconds: ${LIVE_FRAME_TIMEOUT_SECONDS:20}
+    startup-frame-timeout-seconds: ${LIVE_STARTUP_FRAME_TIMEOUT_SECONDS:30}
+    static-frame-seconds: ${LIVE_STATIC_FRAME_SECONDS:3}
+    camera-retry-seconds: ${LIVE_CAMERA_RETRY_SECONDS:10}
+    camera-probe-timeout-seconds: ${LIVE_CAMERA_PROBE_TIMEOUT_SECONDS:8}
+    restart-delay-seconds: ${LIVE_RESTART_DELAY:5}
   detection-overlay:
-    enabled: "${LIVE_DETECTION_OVERLAY_ENABLED:true}"
+    enabled: ${LIVE_DETECTION_OVERLAY_ENABLED:true}
   cameras:
     - name: camera1
       label: "CAMERA 1"
-      rtsp-url: "${LIVE_CAMERA1_RTSP_URL:rtsp://go2rtc:8554/camera1}"
-      thread-queue-size: "${LIVE_CAMERA1_INPUT_THREAD_QUEUE_SIZE:256}"
-      rtsp-timeout-us: "${LIVE_CAMERA1_RTSP_TIMEOUT_US:15000000}"
-      probesize: "${LIVE_CAMERA1_INPUT_PROBESIZE:10000000}"
-      analyzeduration: "${LIVE_CAMERA1_INPUT_ANALYZEDURATION:5000000}"
-      filter-fps: "${LIVE_CAMERA1_FILTER_FPS:10}"
+      rtsp-url: ${LIVE_CAMERA1_RTSP_URL:rtsp://go2rtc:8554/camera1}
+      thread-queue-size: ${LIVE_CAMERA1_INPUT_THREAD_QUEUE_SIZE:256}
+      rtsp-timeout-us: ${LIVE_CAMERA1_RTSP_TIMEOUT_US:15000000}
+      probesize: ${LIVE_CAMERA1_INPUT_PROBESIZE:10000000}
+      analyzeduration: ${LIVE_CAMERA1_INPUT_ANALYZEDURATION:5000000}
+      filter-fps: ${LIVE_CAMERA1_FILTER_FPS:10}
 rabbitMq:
   host: '${RABBITMQ_HOST:localhost}'
   port: ${RABBITMQ_PORT:5672}
