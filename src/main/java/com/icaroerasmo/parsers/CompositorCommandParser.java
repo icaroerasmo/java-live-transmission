@@ -178,16 +178,16 @@ public class CompositorCommandParser {
         cmd.add("-ac");
         cmd.add(String.valueOf(properties.output().audioChannels()));
 
-        // Output
-        cmd.add("-flvflags");
-        cmd.add("no_duration_filesize");
+        // Output (RTSP push to go2rtc)
+        cmd.add("-rtsp_transport");
+        cmd.add("tcp");
         cmd.add("-f");
-        cmd.add("flv");
-        String rtmpUrl = properties.rtmpUrl();
-        if (rtmpUrl.endsWith("/")) {
-            rtmpUrl = rtmpUrl.substring(0, rtmpUrl.length() - 1);
+        cmd.add("rtsp");
+        String rtspUrl = properties.rtspUrl();
+        if (rtspUrl.endsWith("/")) {
+            rtspUrl = rtspUrl.substring(0, rtspUrl.length() - 1);
         }
-        cmd.add(rtmpUrl + "/" + properties.streamKey());
+        cmd.add(rtspUrl);
 
         return cmd;
     }

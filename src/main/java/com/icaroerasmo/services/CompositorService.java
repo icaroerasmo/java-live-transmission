@@ -32,13 +32,13 @@ public class CompositorService {
 
     private FfmpegRunner runner;
     private volatile boolean running;
+    private volatile boolean stopping;
     private volatile int lastExitCode = 0;
-    private volatile int rtmpFailures = 0;
-
-    private static final int RTMP_BROKEN_PIPE_EXIT_CODE = 224;
+    private volatile int compositorFailures = 0;
 
     public synchronized void start() {
         stop();
+        stopping = false;
 
         detectionStateStorage.ensureLabelFile();
         runner = new FfmpegRunner("compositor");
@@ -59,14 +59,13 @@ public class CompositorService {
                     lastExitCode = exitCode;
                     log.warn("[Compositor] Compositor exited with code {}", exitCode);
 
-                    if (exitCode == RTMP_BROKEN_PIPE_EXIT_CODE) {
-                        rtmpFailures++;
-                        log.warn("[Compositor] RTMP Broken pipe (failure #{})", rtmpFailures);
-                        notificationPublisher.publish(MessagesEnum.COMPOSITOR_STOPPED, "RTMP connection dropped");
+                    if (!stopping && exitCode != 0) {
+                        compositorFailures++;
+                        log.warn("[Compositor] Compositor failure #{}", compositorFailures);
                     } else {
-                        rtmpFailures = 0;
-                        notificationPublisher.publish(MessagesEnum.COMPOSITOR_STOPPED, "exit code: " + exitCode);
+                        compositorFailures = 0;
                     }
+                    notificationPublisher.publish(MessagesEnum.COMPOSITOR_STOPPED, "exit code: " + exitCode);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
@@ -78,6 +77,7 @@ public class CompositorService {
     }
 
     public synchronized void stop() {
+        stopping = true;
         if (runner != null) {
             runner.destroy();
             runner = null;
@@ -89,11 +89,11 @@ public class CompositorService {
         return running && runner != null && runner.isAlive();
     }
 
-    public int getRtmpFailures() {
-        return rtmpFailures;
+    public int getCompositorFailures() {
+        return compositorFailures;
     }
 
-    public void resetRtmpFailures() {
-        rtmpFailures = 0;
+    public void resetCompositorFailures() {
+        compositorFailures = 0;
     }
 }
