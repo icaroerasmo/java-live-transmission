@@ -3,6 +3,7 @@ package com.icaroerasmo.parsers;
 import com.icaroerasmo.properties.CameraProperties;
 import com.icaroerasmo.properties.LiveTransmissionProperties;
 import com.icaroerasmo.storage.DetectionStateStorage;
+import com.icaroerasmo.util.GridLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -92,15 +93,7 @@ public class CompositorCommandParser {
                         panelW, panelH, fps, i, i, i, i, i, i, i));
             }
 
-            if (n == 4) {
-                filter.append("[panel0][panel1]hstack=inputs=2[top];");
-                filter.append("[panel2][panel3]hstack=inputs=2[bottom];");
-                filter.append("[top][bottom]vstack=inputs=2,");
-            } else if (n == 2) {
-                filter.append("[panel0][panel1]hstack=inputs=2,");
-            } else if (n == 1) {
-                filter.append("[panel0],");
-            }
+            appendGrid(filter, n, "panel", targetAspect(properties));
 
             filter.append(String.format(
                     "drawtext=textfile=%s:reload=1:fontfile=%s:fontcolor=white:fontsize=28:"
@@ -111,15 +104,7 @@ public class CompositorCommandParser {
                 filter.append(String.format("[%d:v]setpts=PTS-STARTPTS[cam%d];", i, i));
             }
 
-            if (n == 4) {
-                filter.append("[cam0][cam1]hstack=inputs=2[top];");
-                filter.append("[cam2][cam3]hstack=inputs=2[bottom];");
-                filter.append("[top][bottom]vstack=inputs=2,");
-            } else if (n == 2) {
-                filter.append("[cam0][cam1]hstack=inputs=2,");
-            } else if (n == 1) {
-                filter.append("[cam0],");
-            }
+            appendGrid(filter, n, "cam", targetAspect(properties));
         }
 
         filter.append(String.format(
@@ -190,5 +175,42 @@ public class CompositorCommandParser {
         cmd.add(rtspUrl);
 
         return cmd;
+    }
+
+    private static void appendGrid(StringBuilder filter, int count, String cellPrefix, double targetAspect) {
+        GridLayout.Grid grid = GridLayout.compute(count, targetAspect);
+        int cols = grid.columns();
+        int rows = grid.rows();
+
+        List<String> rowLabels = new ArrayList<>();
+        for (int r = 0; r < rows; r++) {
+            int start = r * cols;
+            int end = Math.min(count, start + cols);
+            if (end - start == 1) {
+                rowLabels.add(String.format("[%s%d]", cellPrefix, start));
+                continue;
+            }
+            String rowLabel = "row" + r;
+            for (int i = start; i < end; i++) {
+                filter.append(String.format("[%s%d]", cellPrefix, i));
+            }
+            filter.append(String.format("hstack=inputs=%d[%s];", end - start, rowLabel));
+            rowLabels.add(String.format("[%s]", rowLabel));
+        }
+
+        if (rows > 1) {
+            for (String rowLabel : rowLabels) {
+                filter.append(rowLabel);
+            }
+            filter.append(String.format("vstack=inputs=%d,", rows));
+        } else {
+            filter.append(String.format("%s,", rowLabels.get(0)));
+        }
+    }
+
+    private static double targetAspect(LiveTransmissionProperties properties) {
+        double width = Double.parseDouble(properties.output().width());
+        double height = Double.parseDouble(properties.output().height());
+        return height > 0 ? width / height : 16.0 / 9.0;
     }
 }
