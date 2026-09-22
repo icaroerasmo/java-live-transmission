@@ -45,8 +45,9 @@ class CompositorCommandParserTest {
     void deveMontarGrid2x1_paraDuasCameras() {
         String filter = filterFor(2, true);
 
-        assertTrue(filter.contains("[panel0][panel1]hstack=inputs=2[row0];"));
-        assertTrue(filter.contains("[row0],"));
+        assertTrue(filter.contains("[panel0][panel1]hstack=inputs=2,"),
+                "linha unica deveria conectar hstack direto a cadeia");
+        assertFalse(filter.contains("[row0],"));
         assertFalse(filter.contains("vstack"));
     }
 
@@ -54,8 +55,9 @@ class CompositorCommandParserTest {
     void deveMontarGrid3x1_paraTresCameras() {
         String filter = filterFor(3, true);
 
-        assertTrue(filter.contains("[panel0][panel1][panel2]hstack=inputs=3[row0];"));
-        assertTrue(filter.contains("[row0],"));
+        assertTrue(filter.contains("[panel0][panel1][panel2]hstack=inputs=3,"),
+                "linha unica deveria conectar hstack direto a cadeia");
+        assertFalse(filter.contains("[row0],"));
         assertFalse(filter.contains("vstack"));
     }
 
@@ -63,9 +65,20 @@ class CompositorCommandParserTest {
     void deveMontarGrid1x1_paraUmaCamera() {
         String filter = filterFor(1, true);
 
-        assertTrue(filter.contains("[panel0],"));
-        assertFalse(filter.contains("hstack"));
+        assertTrue(filter.contains("[panel0]hstack=inputs=1,"),
+                "camera unica deveria usar hstack=inputs=1 para nao deixar label orfao");
+        assertFalse(filter.contains("[panel0],"));
         assertFalse(filter.contains("vstack"));
+    }
+
+    @Test
+    void gridDeLinhaUnica_deveSerValidoParaOFilterGraphFfmpeg() {
+        String filter = filterFor(2, true);
+
+        assertFalse(filter.contains("[row0],"),
+                "label seguido de virgula sem filtro gera 'No such filter: \\'\\'' no ffmpeg");
+        assertTrue(filter.contains("hstack=inputs=2,drawtext="),
+                "hstack deveria continuar a cadeia direto para o drawtext");
     }
 
     @Test
