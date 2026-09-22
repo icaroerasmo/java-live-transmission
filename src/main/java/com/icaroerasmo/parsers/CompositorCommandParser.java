@@ -182,6 +182,14 @@ public class CompositorCommandParser {
         int cols = grid.columns();
         int rows = grid.rows();
 
+        if (rows == 1) {
+            for (int i = 0; i < count; i++) {
+                filter.append(String.format("[%s%d]", cellPrefix, i));
+            }
+            filter.append(String.format("hstack=inputs=%d,", count));
+            return;
+        }
+
         List<String> rowLabels = new ArrayList<>();
         for (int r = 0; r < rows; r++) {
             int start = r * cols;
@@ -198,14 +206,10 @@ public class CompositorCommandParser {
             rowLabels.add(String.format("[%s]", rowLabel));
         }
 
-        if (rows > 1) {
-            for (String rowLabel : rowLabels) {
-                filter.append(rowLabel);
-            }
-            filter.append(String.format("vstack=inputs=%d,", rows));
-        } else {
-            filter.append(String.format("%s,", rowLabels.get(0)));
+        for (String rowLabel : rowLabels) {
+            filter.append(rowLabel);
         }
+        filter.append(String.format("vstack=inputs=%d,", rows));
     }
 
     private static double targetAspect(LiveTransmissionProperties properties) {
