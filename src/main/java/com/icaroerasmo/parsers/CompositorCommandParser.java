@@ -163,18 +163,30 @@ public class CompositorCommandParser {
         cmd.add("-ac");
         cmd.add(String.valueOf(properties.output().audioChannels()));
 
-        // Output (RTSP push to go2rtc)
-        cmd.add("-rtsp_transport");
-        cmd.add("tcp");
-        cmd.add("-f");
-        cmd.add("rtsp");
-        String rtspUrl = properties.rtspUrl();
-        if (rtspUrl.endsWith("/")) {
-            rtspUrl = rtspUrl.substring(0, rtspUrl.length() - 1);
+        // Output (RTSP push to go2rtc, or direct RTMP/RTMPS to an ingest like Telegram)
+        boolean isRtmp = isRtmpScheme(properties.rtspUrl());
+        if (isRtmp) {
+            cmd.add("-f");
+            cmd.add("flv");
+            cmd.add("-flvflags");
+            cmd.add("no_duration_filesize");
+        } else {
+            cmd.add("-rtsp_transport");
+            cmd.add("tcp");
+            cmd.add("-f");
+            cmd.add("rtsp");
         }
-        cmd.add(rtspUrl);
+        String outputUrl = properties.rtspUrl();
+        if (outputUrl.endsWith("/")) {
+            outputUrl = outputUrl.substring(0, outputUrl.length() - 1);
+        }
+        cmd.add(outputUrl);
 
         return cmd;
+    }
+
+    private static boolean isRtmpScheme(String url) {
+        return url != null && (url.startsWith("rtmp://") || url.startsWith("rtmps://"));
     }
 
     private static void appendGrid(StringBuilder filter, int count, String cellPrefix, double targetAspect) {
