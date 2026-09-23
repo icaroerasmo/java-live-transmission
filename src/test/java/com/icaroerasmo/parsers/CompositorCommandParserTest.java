@@ -103,6 +103,35 @@ class CompositorCommandParserTest {
         assertTrue(filter.contains("amix=inputs=6"));
     }
 
+    @Test
+    void outputRtsp_deveUsarMuxerRtspETransporteTcp() {
+        List<String> cmd = CompositorCommandParser.build(properties(2, true, "rtsp://go2rtc:8554/panel"));
+
+        assertTrue(cmd.contains("-rtsp_transport"), "RTSP deveria forcar transporte tcp");
+        assertTrue(cmd.contains("rtsp"), "RTSP deveria usar muxer rtsp");
+        assertTrue(cmd.contains("rtsp://go2rtc:8554/panel"));
+        assertFalse(cmd.contains("flv"), "RTSP nao deveria usar flv");
+    }
+
+    @Test
+    void outputRtmp_deveUsarMuxerFlv() {
+        List<String> cmd = CompositorCommandParser.build(properties(2, true, "rtmp://ingest.example.com/live/key"));
+
+        assertTrue(cmd.contains("-f"));
+        assertTrue(cmd.contains("flv"), "RTMP deveria usar muxer flv");
+        assertFalse(cmd.contains("-rtsp_transport"), "RTMP nao deveria forcar transporte rtsp");
+        assertTrue(cmd.contains("rtmp://ingest.example.com/live/key"));
+    }
+
+    @Test
+    void outputRtmps_deveUsarMuxerFlv() {
+        List<String> cmd = CompositorCommandParser.build(properties(2, true, "rtmps://dc1-1.rtmp.t.me/s/KEY"));
+
+        assertTrue(cmd.contains("flv"), "RTMPS deveria usar muxer flv");
+        assertFalse(cmd.contains("-rtsp_transport"), "RTMPS nao deveria forcar transporte rtsp");
+        assertTrue(cmd.contains("rtmps://dc1-1.rtmp.t.me/s/KEY"));
+    }
+
     private static String filterFor(int cameraCount, boolean overlayEnabled) {
         List<String> cmd = CompositorCommandParser.build(properties(cameraCount, overlayEnabled));
         int index = cmd.indexOf("-filter_complex");
@@ -110,6 +139,10 @@ class CompositorCommandParserTest {
     }
 
     private static LiveTransmissionProperties properties(int cameraCount, boolean overlayEnabled) {
+        return properties(cameraCount, overlayEnabled, "rtsp://go2rtc:8554/panel");
+    }
+
+    private static LiveTransmissionProperties properties(int cameraCount, boolean overlayEnabled, String outputUrl) {
         List<CameraProperties> cameras = new ArrayList<>();
         for (int i = 1; i <= cameraCount; i++) {
             String name = "camera" + i;
@@ -125,7 +158,7 @@ class CompositorCommandParserTest {
         }
 
         return new LiveTransmissionProperties(
-                "rtsp://go2rtc:8554/panel",
+                outputUrl,
                 new LiveTransmissionProperties.OutputProperties(
                         "1200k", "1500k", "3000k", "30", "60",
                         "1280", "720",
