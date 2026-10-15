@@ -13,3 +13,5 @@ ghcr.io/icaroerasmo/java-live-transmission:latest
 
 Configuration is supplied through environment variables and an optional
 `/app/config/config.yaml` bind mount.
+
+For GPU/encoder selection (NVIDIA NVENC or CPU fallback), see [GPU_ACCELERATION.md](GPU_ACCELERATION.md).
