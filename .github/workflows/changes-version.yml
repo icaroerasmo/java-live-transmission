@@ -7,6 +7,8 @@ on:
 
 jobs:
   block-release-tags:
+    # Só roda para branches reais `release/*` — ignora branches de feature e tags `release/*`.
+    if: startsWith(github.ref, 'refs/heads/release/')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -20,8 +22,10 @@ jobs:
         run: |
           echo "TAG_NAME=$(basename $GITHUB_REF_NAME)" >> $GITHUB_OUTPUT
           echo "TAG_NAME=$(basename $GITHUB_REF_NAME)"
-      - name: Checkout to main
+      - name: Checkout release branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
