@@ -21,8 +21,16 @@ public class CompositorCommandParser {
         cmd.add("-nostdin");
         cmd.add("-nostats");
 
-        List<CameraProperties> cameras = properties.cameras();
+        List<CameraProperties> cameras = properties.cameras().stream()
+                .filter(CameraProperties::isEnabled)
+                .toList();
         int n = cameras.size();
+
+        // A grid/audio mix needs at least one input: hstack=inputs=0 or amix=inputs=0
+        // makes ffmpeg reject the whole filter graph.
+        if (n == 0) {
+            throw new IllegalStateException("no enabled cameras at live.cameras");
+        }
 
         // Video inputs (frame workers) - image2pipe MJPEG
         for (CameraProperties camera : cameras) {
