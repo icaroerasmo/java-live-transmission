@@ -7,7 +7,9 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CompositorCommandParserTest {
@@ -104,6 +106,61 @@ class CompositorCommandParserTest {
     }
 
     @Test
+    void cameraDesabilitada_deveSerExcluidaDoGrid() {
+        List<CameraProperties> cameras = List.of(camera(1, true), camera(2, false));
+        List<String> cmd = CompositorCommandParser.build(properties("rtsp://go2rtc:8554/panel", cameras, true));
+        String filter = cmd.get(cmd.indexOf("-filter_complex") + 1);
+
+        assertEquals(1, countOccurrences(cmd, cameras.get(0).pipePath()),
+                "apenas o pipe da camera habilitada deveria entrar como input");
+        assertFalse(cmd.contains(cameras.get(1).pipePath()),
+                "camera desabilitada nao deveria ser alimentada ao compositor");
+        assertTrue(filter.contains("[panel0]hstack=inputs=1,"),
+                "grid deveria ter um unico painel");
+        assertFalse(filter.contains("[panel1]"), "nao deveria existir segundo painel");
+        assertFalse(filter.contains("vstack"));
+        assertTrue(filter.contains("amix=inputs=1"), "mix de audio deveria ter um unico input");
+    }
+
+    @Test
+    void cameraDesabilitada_naoDeveDesalinharIndicesDoGrid() {
+        List<CameraProperties> cameras = List.of(camera(1, false), camera(2, true), camera(3, true), camera(4, false));
+        List<String> cmd = CompositorCommandParser.build(properties("rtsp://go2rtc:8554/panel", cameras, true));
+        String filter = cmd.get(cmd.indexOf("-filter_complex") + 1);
+
+        assertTrue(filter.contains("[panel0][panel1]hstack=inputs=2,"),
+                "as 2 cameras habilitadas deveriam formar o grid");
+        assertFalse(filter.contains("[panel2]"), "nao deveria existir terceiro painel");
+        assertTrue(filter.contains("amix=inputs=2"));
+        assertEquals(6, countOccurrences(cmd, "-i"),
+                "2 cameras habilitadas x 3 inputs (video, borda e audio)");
+    }
+
+    @Test
+    void nenhumaCameraHabilitada_deveFalharAntesDeGerarGrafoInvalido() {
+        List<CameraProperties> desabilitadas = List.of(camera(1, false), camera(2, false));
+
+        IllegalStateException erro = assertThrows(IllegalStateException.class,
+                () -> CompositorCommandParser.build(properties("rtsp://go2rtc:8554/panel", desabilitadas, true)),
+                "sem cameras o parser nao deve produzir hstack/amix com zero inputs");
+
+        assertTrue(erro.getMessage().contains("no enabled cameras"));
+    }
+
+    @Test
+    void listaDeCamerasVazia_deveFalharAntesDeGerarGrafoInvalido() {
+        assertThrows(IllegalStateException.class,
+                () -> CompositorCommandParser.build(properties("rtsp://go2rtc:8554/panel", List.of(), true)));
+    }
+
+    @Test
+    void isEnabled_nuloDeveSignificarHabilitado() {
+        assertTrue(camera(1, null).isEnabled(), "chave ausente no yaml = null = habilitada");
+        assertTrue(camera(1, true).isEnabled());
+        assertFalse(camera(1, false).isEnabled());
+    }
+
+    @Test
     void outputRtsp_deveUsarMuxerRtspETransporteTcp() {
         List<String> cmd = CompositorCommandParser.build(properties(2, true, "rtsp://go2rtc:8554/panel"));
 
@@ -142,21 +199,39 @@ class CompositorCommandParserTest {
         return properties(cameraCount, overlayEnabled, "rtsp://go2rtc:8554/panel");
     }
 
+    private static int countOccurrences(List<String> cmd, String value) {
+        int count = 0;
+        for (String arg : cmd) {
+            if (value.equals(arg)) count++;
+        }
+        return count;
+    }
+
     private static LiveTransmissionProperties properties(int cameraCount, boolean overlayEnabled, String outputUrl) {
         List<CameraProperties> cameras = new ArrayList<>();
         for (int i = 1; i <= cameraCount; i++) {
-            String name = "camera" + i;
-            cameras.add(new CameraProperties(
-                    name,
-                    "CAMERA " + i,
-                    "rtsp://cam-" + i,
-                    "256",
-                    "5000000",
-                    "5000000",
-                    "5000000",
-                    "10"));
+            cameras.add(camera(i, true));
         }
 
+        return properties(outputUrl, cameras, overlayEnabled);
+    }
+
+    private static CameraProperties camera(int index, Boolean enabled) {
+        return new CameraProperties(
+                "camera" + index,
+                "CAMERA " + index,
+                "rtsp://cam-" + index,
+                "256",
+                "5000000",
+                "5000000",
+                "5000000",
+                "10",
+                enabled);
+    }
+
+    private static LiveTransmissionProperties properties(String outputUrl,
+                                                         List<CameraProperties> cameras,
+                                                         boolean overlayEnabled) {
         return new LiveTransmissionProperties(
                 outputUrl,
                 new LiveTransmissionProperties.OutputProperties(

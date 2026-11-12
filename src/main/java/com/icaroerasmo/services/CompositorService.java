@@ -40,9 +40,17 @@ public class CompositorService {
         stop();
         stopping = false;
 
+        List<String> command;
+        try {
+            command = CompositorCommandParser.build(properties);
+        } catch (IllegalStateException e) {
+            log.warn("[Compositor] Not starting compositor: {}", e.getMessage());
+            notificationPublisher.publish(MessagesEnum.COMPOSITOR_STOPPED, e.getMessage());
+            return;
+        }
+
         detectionStateStorage.ensureLabelFile();
         runner = new FfmpegRunner("compositor");
-        List<String> command = CompositorCommandParser.build(properties);
 
         log.info("[Compositor] Starting compositor");
         Process process = runner.start(command);

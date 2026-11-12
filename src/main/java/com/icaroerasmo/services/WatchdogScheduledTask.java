@@ -58,15 +58,27 @@ public class WatchdogScheduledTask {
     }
 
     public void startAll() {
+        List<CameraProperties> cameras = enabledCameras();
+
+        // No camera to compose: keep the app alive but do not start the compositor.
+        // Building a grid/audio mix with zero inputs is invalid for ffmpeg
+        // (hstack=inputs=0 / amix=inputs=0) and would abort the whole filter graph.
+        if (cameras.isEmpty()) {
+            started = false;
+            log.warn("[Watchdog] No enabled cameras configured — compositor and camera workers will not start. "
+                    + "Set 'enabled: true' on at least one entry of live.cameras to go live");
+            return;
+        }
+
         log.info("[Watchdog] Starting all services");
 
         boolean overlayEnabled = properties.detectionOverlay() == null || properties.detectionOverlay().enabled();
 
-        for (CameraProperties camera : properties.cameras()) {
+        for (CameraProperties camera : cameras) {
             generateFallbackImage(camera);
         }
 
-        for (CameraProperties camera : properties.cameras()) {
+        for (CameraProperties camera : cameras) {
             frameWorkerService.startWorker(camera);
         }
 
@@ -74,7 +86,7 @@ public class WatchdogScheduledTask {
             borderFeederService.generateBorderImages();
         }
 
-        for (CameraProperties camera : properties.cameras()) {
+        for (CameraProperties camera : cameras) {
             frameFeederService.startFeeder(camera);
             audioStreamService.start(camera);
             if (overlayEnabled) {
@@ -85,6 +97,12 @@ public class WatchdogScheduledTask {
         compositorService.start();
         started = true;
         log.info("[Watchdog] All services started");
+    }
+
+    private List<CameraProperties> enabledCameras() {
+        return properties.cameras().stream()
+                .filter(CameraProperties::isEnabled)
+                .toList();
     }
 
     @Scheduled(fixedDelayString = "1000")
@@ -118,6 +136,8 @@ public class WatchdogScheduledTask {
 
         // Monitor each camera
         for (CameraProperties camera : properties.cameras()) {
+            if (!camera.isEnabled()) continue;
+
             CameraStateStorage.CameraState state = cameraStateStorage.getOrCreate(camera);
 
             // If worker is not running, check if it's time to probe

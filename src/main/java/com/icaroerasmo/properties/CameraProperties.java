@@ -8,8 +8,13 @@ public record CameraProperties(
         String rtspTimeoutUs,
         String probesize,
         String analyzeduration,
-        String filterFps
+        String filterFps,
+        Boolean enabled
 ) {
+    public boolean isEnabled() {
+        return enabled == null || enabled;
+    }
+
     public String currentPath() {
         return "/tmp/" + name.replaceAll("\\s+", "") + "-current.jpg";
     }

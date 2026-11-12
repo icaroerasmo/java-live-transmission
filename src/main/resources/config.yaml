@@ -35,6 +35,10 @@ live:
   cameras:
     - name: camera1
       label: "CAMERA 1"
+      # Set to false to fully skip this camera: it is excluded from the ffmpeg
+      # grid, gets no frame/audio worker and is never probed/restarted by the watchdog.
+      # Keep it a literal boolean (the dashboard only renders the toggle for real booleans).
+      enabled: true
       rtsp-url: "${LIVE_CAMERA1_RTSP_URL:rtsp://go2rtc:8554/camera1}"
       thread-queue-size: "${LIVE_CAMERA1_INPUT_THREAD_QUEUE_SIZE:256}"
       rtsp-timeout-us: "${LIVE_CAMERA1_RTSP_TIMEOUT_US:15000000}"
